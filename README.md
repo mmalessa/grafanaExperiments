@@ -1,11 +1,14 @@
-# MongoDB datasource
-  
+# Grafana Experiments
+Experiments with Grafana with MongoDB and PostgreSQL datasources  
+
+
+
 ## Run
 ```shell script
 docker-compose up -d
 ```
 
-## Feed collection
+## Filling the database with test data
 ### MongoDB
 ```shell script
 $ cd fixtures
@@ -19,7 +22,7 @@ $ ./mongo_create_example_dataset.sh
 http://localhost:3000
 ```
 
-## Grafana datasources
+## Configuration of data sources in Grafana
 ### MongoDB
 ```text
 URL: http://mongods:3333
@@ -37,7 +40,7 @@ SSL Mode: disable
 Version: 10
 ```
 
-## Queries
+## Dashboard Queries
 ### MongoDB example data set 
 ```mongojs
 db.data.aggregate ([ 
