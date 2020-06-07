@@ -1,0 +1,8 @@
+FROM node:8.16-alpine
+RUN apk add git
+WORKDIR /application
+RUN git clone https://github.com/JamesOsgood/mongodb-grafana.git
+WORKDIR /application/mongodb-grafana
+RUN npm install
+ENTRYPOINT ["npm"]
+CMD ["run", "server"]

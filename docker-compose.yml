@@ -1,71 +1,20 @@
 version: "3.7"
 services:
-#  gtest-core-postgres:
-#    image: postgres:10-alpine
-#    container_name: gtest-core-postgres-db
-#    restart: on-failure
-#    volumes:
-#      - gtest_core_database:/var/lib/postgresql/data
-#    environment:
-#      POSTGRES_USER: ${PGSQL_CORE_USER}
-#      POSTGRES_PASSWORD: ${PGSQL_CORE_PASS}
-#      POSTGRES_DB: ${PGSQL_CORE_DB}
-#    ports: [5432:5432]
-#    networks:
-#      gtest:
-#        aliases:
-#          - database-core
-#  gtest-pgadmin4:
-#    image: dpage/pgadmin4
-#    container_name: gtest-pgadmin4
-#    restart: on-failure
-#    volumes:
-#      - gtest_pgadmin4:/var/lib/pgadmin
-#    environment:
-#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASS}
-#    ports: [10000:80]
-#    networks:
-#      gtest:
-#        aliases:
-#          - pgadmin
-
-  gtest-mongodb:
-    image: mongo:latest
-    container_name: gtest-mongodb
-    restart: on-failure
-    volumes:
-      - gtest_mongodb:/data/db
-    ports: [27017:27017]
-    networks:
-      gtest:
-        aliases:
-          - mongo
-
-  gtest-mongo-express:
-    image: mongo-express:latest
-    container_name: gtest-mongo-express
-    restart: on-failure
-    ports: [8888:8081]
-    networks:
-      gtest:
-        aliases:
-          - mongoexpress
-
   gtest-grafana:
-    #image: grafana/grafana:6.7.3
-    image: gtest-grafana:0.0.1
+    image: gtest-grafana:7.0.0
     build:
       context: ./dockerfiles
       dockerfile: DockerfileGrafana
     container_name: gtest-grafana
-    restart: on-failure
+    depends_on:
+      - gtest-mongods
+    restart: always
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS}
     volumes:
       - gtest_grafana:/var/lib/grafana
+      - gtest_grafana_plugins:/var/lib/grafana/plugins
       - ./dev/log/grafana:/var/log/grafana
-      - ./plugins:/var/lib/grafana/plugins
     networks:
       gtest:
         aliases:
@@ -73,22 +22,81 @@ services:
     ports: [3000:3000]
 
   gtest-mongods:
-    image: node:8.16-stretch
+    image: gtest-mongods
+    build:
+      context: ./dockerfiles
+      dockerfile: DockerfileMongoDs
     container_name: gtest-mongods
-    restart: on-failure
+    restart: always
     volumes:
-      - ./plugins/mongodb-grafana:/application
-    command: >
-      bash -c "cd /application && npm install && npm run server"
+      - gtest_grafana_plugins:/application
     networks:
       gtest:
         aliases:
           - mongods
-    ports: [3333:3333]
+
+  gtest-postgres:
+    image: gtest-postgres
+    build:
+      context: ./dockerfiles
+      dockerfile: DockerfilePostgres
+    container_name: gtest-core-postgres-db
+    restart: always
+    volumes:
+      - gtest_postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${PGSQL_USER}
+      POSTGRES_PASSWORD: ${PGSQL_PASS}
+      POSTGRES_DB: ${PGSQL_DB}
+    ports: [5432:5432]
+    networks:
+      gtest:
+        aliases:
+          - postgres
+
+  gtest-mongo:
+    image: gtest-mongodb
+    build:
+      context: ./dockerfiles
+      dockerfile: DockerfileMongo
+    container_name: gtest-mongo
+    restart: always
+    volumes:
+      - gtest_mongo:/data/db
+      - ./fixtures:/fixtures
+    ports: [27017:27017]
+    networks:
+      gtest:
+        aliases:
+          - mongo
+
+  gtest-adminer:
+    image: adminer:4.7.7
+    container_name: gtest-adminer
+    restart: always
+    ports: [8080:8080]
+    environment:
+      ADMINER_DEFAULT_DB_DRIVER: pgsql
+    networks:
+      gtest:
+        aliases:
+          - adminer
+
+  gtest-mongo-express:
+    image: mongo-express:latest
+    container_name: gtest-mongo-express
+    restart: always
+    ports: [8081:8081]
+    networks:
+      gtest:
+        aliases:
+          - mongoexpress
+
 networks:
   gtest:
+
 volumes:
-  gtest_core_database:
-  gtest_pgadmin4:
   gtest_grafana:
-  gtest_mongodb:
+  gtest_grafana_plugins:
+  gtest_postgres:
+  gtest_mongo:
